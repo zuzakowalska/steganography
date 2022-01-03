@@ -10,9 +10,32 @@
 #include <vector>
 #include <fstream>
 #include <cmath>
+#include <sstream>
 
 namespace read_binary {
-    std::vector<int> read_bmp(std::string& file_name) {
+
+    struct rgba {
+        int r, g, b, a;
+    };
+
+    auto convert_to_channels = [] (uint32_t num, read_binary::rgba& channels, int bits_per_pixel) {
+        int bits_per_channel = 8;
+        int bit_mask = (pow(2,bits_per_channel)) - 1;
+
+        channels.b = num & bit_mask;
+        num = num >> bits_per_channel;
+        channels.g = num & bit_mask;
+        num = num >> bits_per_channel;
+        channels.r = num & bit_mask;
+        num = num >> bits_per_channel;
+        channels.a = num & bit_mask;
+
+//        std::cout << std::dec << channels.r << " " << channels.g << " " << channels.b << " " << channels.a << "\n";
+
+    };
+
+
+    std::vector<uint32_t> read_bmp(std::string& file_name) {
         int32_t      pixel_array_offset,
                      width,
                      height;
@@ -39,6 +62,11 @@ namespace read_binary {
         fs.seekg(28, std::ios::beg);
         fs.read((char*) &bits_per_pixel, sizeof(bits_per_pixel));
 
+        if (bits_per_pixel <= 8) {
+            std::cerr << "Nie można zapisać wiadomości, obraz o zbyt małej głębi kolorów" << "\n";
+            exit(-1);
+        }
+
         // in bits
         padded_row_size = ceil((bits_per_pixel * width) / 32) * 4;
         unpadded_row_size = bits_per_pixel * width;
@@ -49,15 +77,13 @@ namespace read_binary {
             fs.read((char*) &pixels[i], unpadded_row_size);
         }
 
+        read_binary::rgba channels;
+        for (auto p : pixels) {
+            std::cout << p << "    " << std::hex << p << "\n";
+            read_binary::convert_to_channels(p, channels, bits_per_pixel);
+        }
 
-
-
-
-//        res.push_back(pixel_array_offset);
-//        res.push_back(width);
-//        res.push_back(height);
-//        res.push_back(bits_per_pixel);
-        return res;
+        return pixels;
     }
 }
 
