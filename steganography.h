@@ -2,8 +2,8 @@
 // Created by Zuzanna Kowalska on 02/01/2022.
 //
 
-#ifndef STEGANOGRAFIA_OBRAZOWA_PROCESS_BINARY_H
-#define STEGANOGRAFIA_OBRAZOWA_PROCESS_BINARY_H
+#ifndef STEGANOGRAFIA_OBRAZOWA_STEGANOGRAPHY_H
+#define STEGANOGRAFIA_OBRAZOWA_STEGANOGRAPHY_H
 
 #include <iostream>
 #include <string>
@@ -12,15 +12,15 @@
 #include <cmath>
 #include <sstream>
 
-namespace read_binary {
+namespace read_binary_image {
 
     struct rgba {
-        int r, g, b, a;
+        unsigned int r, g, b, a;
     };
 
-    auto convert_to_channels = [] (uint32_t num, read_binary::rgba& channels, int bits_per_pixel) {
+    auto convert_to_channels = [] (uint32_t num, read_binary_image::rgba& channels, int bits_per_pixel) {
         int bits_per_channel = 8;
-        int bit_mask = (pow(2,bits_per_channel)) - 1;
+        int bit_mask = (int) (pow(2,bits_per_channel)) - 1;
 
         channels.b = num & bit_mask;
         num = num >> bits_per_channel;
@@ -35,7 +35,7 @@ namespace read_binary {
     };
 
 
-    std::vector<uint32_t> read_bmp(std::string& file_name) {
+    std::vector<read_binary_image::rgba> read_bmp(std::string& file_name) {
         int32_t      pixel_array_offset,
                      width,
                      height;
@@ -77,17 +77,38 @@ namespace read_binary {
             fs.read((char*) &pixels[i], unpadded_row_size);
         }
 
-        read_binary::rgba channels;
+        read_binary_image::rgba channels{};
+        std::vector<read_binary_image::rgba> pixels_channels;
         for (auto p : pixels) {
-            std::cout << p << "    " << std::hex << p << "\n";
-            read_binary::convert_to_channels(p, channels, bits_per_pixel);
+//            std::cout << p << "    " << std::hex << p << "\n";
+            read_binary_image::convert_to_channels(p, channels, bits_per_pixel);
+            pixels_channels.push_back(channels);
         }
 
-        return pixels;
+//        for (auto pc : pixels_channels) {
+//            std::cout << pc.r << " " << pc.g << " " << pc.b << " " << pc.a <<  "\n";
+//        }
+
+        // wektor struktow rgba
+        return pixels_channels;
+    }
+
+    std::vector<read_binary_image::rgba> read_png(std::string& file_name) {
+
     }
 }
 
-namespace write_binary {
+namespace write_binary_image {
 
 }
-#endif //STEGANOGRAFIA_OBRAZOWA_PROCESS_BINARY_H
+
+namespace secret_message {
+    void encode_secret_message(std::vector<read_binary_image::rgba>& pixels, std::string message) {
+        int bits_per_channel = 2;
+        int channels_per_pixel = 4;
+
+
+
+    }
+}
+#endif //STEGANOGRAFIA_OBRAZOWA_STEGANOGRAPHY_H

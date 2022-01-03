@@ -1,7 +1,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include "process_binary.h"
+#include "steganography.h"
 
 int main() {
     std::string file = "/Users/zuza/Studia/steganografia_obrazowa/test-bit.bmp";

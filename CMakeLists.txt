@@ -3,4 +3,4 @@ project(steganografia_obrazowa)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(steganografia_obrazowa Pixel.h process_binary.h main.cpp)
+add_executable(steganografia_obrazowa Pixel.h steganography.h main.cpp)
