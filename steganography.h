@@ -11,6 +11,7 @@
 #include <fstream>
 #include <cmath>
 #include <sstream>
+#include <bitset>
 
 namespace read_binary_image {
 
@@ -165,15 +166,45 @@ namespace write_binary_image {
 }
 
 namespace secret_message {
-
-
-
     void encode_secret_message(std::vector<read_binary_image::rgba>& pixels, std::string message) {
         int bits_per_channel = 2;
-        int channels_per_pixel = 4;
+        int channels_per_pixel = 3;
+        int target_pixel_idx;
+        int target_channel_idx;
+        int current_char_chunk_idx;
+        read_binary_image::byte current_char_chunk;
+        std::bitset<8> current_char_bits;
 
+        for (int i = 0; i < message.length(); i++) {
+            // 8 - wielkosc ASCII char
+            for (int j = 0; j < 8 / bits_per_channel; j++) {
+                current_char_chunk_idx = i * 4 + j;
+                target_pixel_idx = current_char_chunk_idx / channels_per_pixel;
+                target_channel_idx = current_char_chunk_idx % channels_per_pixel;
+                current_char_bits = std::bitset<8>(message[i]);
 
+                // zrobic to w petli
+                current_char_chunk = current_char_bits[j*2] << 1 | current_char_bits[j*2+1];
 
+                switch (target_channel_idx) {
+                    case 0:
+                        pixels[target_pixel_idx].r = ((pixels[target_pixel_idx].r >> bits_per_channel) << bits_per_channel) | current_char_chunk;
+                        break;
+                    case 1:
+                        pixels[target_pixel_idx].g = ((pixels[target_pixel_idx].g >> bits_per_channel) << bits_per_channel) | current_char_chunk;
+                        break;
+                    case 2:
+                        pixels[target_pixel_idx].b = ((pixels[target_pixel_idx].b >> bits_per_channel) << bits_per_channel) | current_char_chunk;
+                        break;
+                    case 3:
+                        pixels[target_pixel_idx].a = ((pixels[target_pixel_idx].a >> bits_per_channel) << bits_per_channel) | current_char_chunk;
+                        break;
+                    default:
+                        // dodac tu error
+                        break;
+                }
+            }
+        }
     }
 }
 #endif //STEGANOGRAFIA_OBRAZOWA_STEGANOGRAPHY_H
