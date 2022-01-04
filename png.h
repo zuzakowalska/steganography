@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 #include <fstream>
+#include "constants.h"
 #include "channels.h"
 
 namespace png {
@@ -32,11 +33,11 @@ namespace png {
         char* width_ch = new char[4];
         char* height_ch = new char[4];
 
-        fs.seekg(16, std::ios::beg);
+        fs.seekg(CONSTANTS::WIDTH_PNG_OFFSET, std::ios::beg);
         fs.read(width_ch, sizeof(width_ch));
-        fs.seekg(20, std::ios::beg);
+        fs.seekg(CONSTANTS::HEIGHT_PNG_OFFSET, std::ios::beg);
         fs.read(height_ch, sizeof(height_ch));
-        fs.seekg(24, std::ios::beg);
+        fs.seekg(CONSTANTS::BITS_DEPTH_OFFSET, std::ios::beg);
         fs.read((char*) &bits_depth, 1);
 
         width = (width_ch[0] << 24 | width_ch[1] << 16 | width_ch[2] << 8 | width_ch[3]);
