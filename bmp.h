@@ -75,44 +75,85 @@ namespace bmp {
         return pixels_channels;
     }
 
-    std::vector<CONSTANTS::byte>*
+    std::vector<CONSTANTS::byte>
     create_pixel_array(std::vector<channels::channels> &pixels, int32_t width, int16_t bits_per_pixel) {
         unsigned int padded_row_size   = ceil((bits_per_pixel * width) / 32) * 4;
         unsigned int unpadded_row_size = bits_per_pixel * width;
         unsigned int pad_size          = padded_row_size - unpadded_row_size;
-        int bytes_per_pixel = bits_per_pixel / CONSTANTS::BITS_PER_CHANNEL;
+//        int          bytes_per_pixel   = bits_per_pixel / CONSTANTS::BITS_PER_CHANNEL;
+        int          bytes_per_pixel   = 4;
 
-        std::vector<uint32_t> pixel_array;
-//        auto pixel_bytes = std::vector<CONSTANTS::byte>(pixels.size() * (bytes_per_pixel));
-        std::vector<CONSTANTS::byte>* pixel_bytes;
-        pixel_bytes->reserve(pixels.size() * (bytes_per_pixel));
-        bool is_alpha = bits_per_pixel == 32;
-        std::vector<CONSTANTS::byte> *current_bytes;
-        current_bytes->reserve(bytes_per_pixel);
+//        std::cout << bits_per_pixel << " " << CONSTANTS::BITS_PER_CHANNEL << "\n\n";
+        auto pixel_array = std::vector<CONSTANTS::byte>(pixels.size() * bytes_per_pixel);
+//        std::cout << pixel_array.size() << "\n\n";
+        bool is_alpha      = bits_per_pixel == 32;
+        auto current_bytes = std::vector<CONSTANTS::byte>(bytes_per_pixel);
 
         for (int i = 0; i < pixels.size(); ++i) {
-            current_bytes = channels::channels_to_bytes(pixels[i], is_alpha);
-            for (int j = 0; j < bytes_per_pixel; ++j) {
-                pixel_bytes[i*bytes_per_pixel+j] = current_bytes[j];
-
+            if (is_alpha) {
+                pixel_array[i * bytes_per_pixel]     = pixels[i].b;
+                pixel_array[i * bytes_per_pixel + 1] = pixels[i].g;
+                pixel_array[i * bytes_per_pixel + 2] = pixels[i].r;
+                pixel_array[i * bytes_per_pixel + 3] = pixels[i].a;
+            } else {
+                pixel_array[i * bytes_per_pixel]     = pixels[i].b;
+                pixel_array[i * bytes_per_pixel + 1] = pixels[i].g;
+                pixel_array[i * bytes_per_pixel + 2] = pixels[i].r;
             }
         }
-        for (CONSTANTS::byte p : *pixel_bytes) {
-            std::cout << p << " ";
+
+        return pixel_array;
+    }
+
+    void write_bmp(std::string &filename, std::string &output_path, std::vector<CONSTANTS::byte> &pixel_array,
+                   uint16_t pixel_array_offset) {
+        std::ifstream fs;
+        fs.open(filename, std::ios::out | std::ios::binary);
+        if (!fs) {
+            std::cerr << "Nie można otworzyć pliku" << "\n";
+            std::exit(-1);
+        }
+
+        std::streampos filesize;
+        fs.seekg(0, std::ios::end);
+        filesize = fs.tellg();
+        fs.seekg(0, std::ios::beg);
+
+        std::vector<CONSTANTS::byte> file_contents(filesize);
+
+        fs.seekg(0, std::ios::beg);
+        fs.read((char*) &file_contents[0], filesize);
+
+        for (CONSTANTS::byte b: file_contents) {
+            std::cout << (int) b << " ";
         }
         std::cout << "\n";
 
-        return pixel_bytes;
+        std::copy(pixel_array.begin(), pixel_array.end(), file_contents.begin() + pixel_array_offset);
+
+
+//        std::cout << pixel_array_offset << "\n";
+//        std::cout << pixel_array.size() << "\n";
+
+        for (CONSTANTS::byte b: file_contents) {
+            std::cout << (int) b << " ";
+        }
+        std::cout << "\n";
+
+        std::ofstream os;
+        os.open(output_path, std::ios::binary);
+        os.write((char*) &file_contents[0], filesize);
+        os.close();
 
     }
 
 
     void encode_secret_message(std::vector<channels::channels> &pixels, std::string &message) {
-        int            target_pixel_idx;
-        int            target_channel_idx;
-        int            current_char_chunk_idx;
-        CONSTANTS::byte      current_char_chunk;
-        std::bitset<8> current_char_bits;
+        int             target_pixel_idx;
+        int             target_channel_idx;
+        int             current_char_chunk_idx;
+        CONSTANTS::byte current_char_chunk;
+        std::bitset<8>  current_char_bits;
 
         for (int i = 0; i < message.length(); i++) {
             // 8 - wielkosc ASCII char
