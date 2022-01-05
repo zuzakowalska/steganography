@@ -18,8 +18,6 @@
 
 namespace bmp {
 
-    typedef unsigned char byte;
-
     int32_t get_pixel_array_offset(std::ifstream &fs) {
         int32_t pixel_array_offset;
         fs.seekg(CONSTANTS::PIXEL_ARRAY_OFFSET_OFFSET, std::ios::beg);
@@ -52,13 +50,14 @@ namespace bmp {
         return bits_per_pixel;
     }
 
-    std::vector<channels::channels> read_image(int32_t pixel_array_offset, int32_t width, int32_t height, int16_t bits_per_pixel, std::ifstream &fs) {
-        std::vector<uint32_t> pixels;
-        channels::channels channels{};
+    std::vector<channels::channels>
+    read_image(int32_t pixel_array_offset, int32_t width, int32_t height, int16_t bits_per_pixel, std::ifstream &fs) {
+        std::vector<uint32_t>           pixels;
+        channels::channels              channels{};
         std::vector<channels::channels> pixels_channels;
 
         // in bits
-        unsigned int padded_row_size = ceil((bits_per_pixel * width) / 32) * 4;
+        unsigned int padded_row_size   = ceil((bits_per_pixel * width) / 32) * 4;
         unsigned int unpadded_row_size = bits_per_pixel * width;
         pixels = std::vector<uint32_t>(abs(width * height));
 
@@ -76,34 +75,52 @@ namespace bmp {
         return pixels_channels;
     }
 
-    std::vector<byte>
+    std::vector<CONSTANTS::byte>*
     create_pixel_array(std::vector<channels::channels> &pixels, int32_t width, int16_t bits_per_pixel) {
-        unsigned int padded_row_size = ceil((bits_per_pixel * width) / 32) * 4;
+        unsigned int padded_row_size   = ceil((bits_per_pixel * width) / 32) * 4;
         unsigned int unpadded_row_size = bits_per_pixel * width;
-        unsigned int pad_size = padded_row_size - unpadded_row_size;
+        unsigned int pad_size          = padded_row_size - unpadded_row_size;
+        int bytes_per_pixel = bits_per_pixel / CONSTANTS::BITS_PER_CHANNEL;
 
-        std::vector<byte> pixel_array;
-        auto pixel_bytes = std::for_each(pixels.begin(), pixels.end(), channels::channels_to_pixels);
+        std::vector<uint32_t> pixel_array;
+//        auto pixel_bytes = std::vector<CONSTANTS::byte>(pixels.size() * (bytes_per_pixel));
+        std::vector<CONSTANTS::byte>* pixel_bytes;
+        pixel_bytes->reserve(pixels.size() * (bytes_per_pixel));
+        bool is_alpha = bits_per_pixel == 32;
+        std::vector<CONSTANTS::byte> *current_bytes;
+        current_bytes->reserve(bytes_per_pixel);
 
-        std::cout << pixel_bytes << "\n";
+        for (int i = 0; i < pixels.size(); ++i) {
+            current_bytes = channels::channels_to_bytes(pixels[i], is_alpha);
+            for (int j = 0; j < bytes_per_pixel; ++j) {
+                pixel_bytes[i*bytes_per_pixel+j] = current_bytes[j];
+
+            }
+        }
+        for (CONSTANTS::byte p : *pixel_bytes) {
+            std::cout << p << " ";
+        }
+        std::cout << "\n";
+
+        return pixel_bytes;
 
     }
 
 
     void encode_secret_message(std::vector<channels::channels> &pixels, std::string &message) {
-        int target_pixel_idx;
-        int target_channel_idx;
-        int current_char_chunk_idx;
-        bmp::byte current_char_chunk;
+        int            target_pixel_idx;
+        int            target_channel_idx;
+        int            current_char_chunk_idx;
+        CONSTANTS::byte      current_char_chunk;
         std::bitset<8> current_char_bits;
 
         for (int i = 0; i < message.length(); i++) {
             // 8 - wielkosc ASCII char
             for (int j = 0; j < 8 / CONSTANTS::BITS_PER_CHANNEL; j++) {
                 current_char_chunk_idx = i * 4 + j;
-                target_pixel_idx = current_char_chunk_idx / CONSTANTS::BITS_PER_CHANNEL;
-                target_channel_idx = current_char_chunk_idx % CONSTANTS::CHANNELS_PER_PIXEL_3;
-                current_char_bits = std::bitset<8>(message[i]);
+                target_pixel_idx       = current_char_chunk_idx / CONSTANTS::BITS_PER_CHANNEL;
+                target_channel_idx     = current_char_chunk_idx % CONSTANTS::CHANNELS_PER_PIXEL_3;
+                current_char_bits      = std::bitset<8>(message[i]);
 
                 // zrobic to w petli
                 current_char_chunk = current_char_bits[j * 2] << 1 | current_char_bits[j * 2 + 1];
@@ -111,22 +128,26 @@ namespace bmp {
                 switch (target_channel_idx) {
                     case 0:
                         pixels[target_pixel_idx].r =
-                                ((pixels[target_pixel_idx].r >> CONSTANTS::BITS_PER_CHANNEL) << CONSTANTS::BITS_PER_CHANNEL) |
+                                ((pixels[target_pixel_idx].r >> CONSTANTS::BITS_PER_CHANNEL)
+                                        << CONSTANTS::BITS_PER_CHANNEL) |
                                 current_char_chunk;
                         break;
                     case 1:
                         pixels[target_pixel_idx].g =
-                                ((pixels[target_pixel_idx].g >> CONSTANTS::BITS_PER_CHANNEL) << CONSTANTS::BITS_PER_CHANNEL) |
+                                ((pixels[target_pixel_idx].g >> CONSTANTS::BITS_PER_CHANNEL)
+                                        << CONSTANTS::BITS_PER_CHANNEL) |
                                 current_char_chunk;
                         break;
                     case 2:
                         pixels[target_pixel_idx].b =
-                                ((pixels[target_pixel_idx].b >> CONSTANTS::BITS_PER_CHANNEL) << CONSTANTS::BITS_PER_CHANNEL) |
+                                ((pixels[target_pixel_idx].b >> CONSTANTS::BITS_PER_CHANNEL)
+                                        << CONSTANTS::BITS_PER_CHANNEL) |
                                 current_char_chunk;
                         break;
                     case 3:
                         pixels[target_pixel_idx].a =
-                                ((pixels[target_pixel_idx].a >> CONSTANTS::BITS_PER_CHANNEL) << CONSTANTS::BITS_PER_CHANNEL) |
+                                ((pixels[target_pixel_idx].a >> CONSTANTS::BITS_PER_CHANNEL)
+                                        << CONSTANTS::BITS_PER_CHANNEL) |
                                 current_char_chunk;
                         break;
                     default:

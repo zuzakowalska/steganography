@@ -14,7 +14,7 @@
 
 namespace steganography {
 
-    void read_image_bmp(std::string& filename, std::string message) {
+    void read_image_bmp(std::string &filename, std::string message) {
         std::ifstream fs(filename, std::ios::in | std::ios::binary);
         if (!fs) {
             std::cerr << "Nie można otworzyć pliku" << "\n";
@@ -22,9 +22,9 @@ namespace steganography {
         }
 
         auto pixel_array_offset = bmp::get_pixel_array_offset(fs);
-        auto width = bmp::get_width(fs);
-        auto height = bmp::get_height(fs);
-        auto bits_per_pixel = bmp::get_bits_per_pixel(fs);
+        auto width              = bmp::get_width(fs);
+        auto height             = bmp::get_height(fs);
+        auto bits_per_pixel     = bmp::get_bits_per_pixel(fs);
 
         if (bits_per_pixel <= 8) {
             std::cerr << "Nie można zapisać wiadomości, obraz o zbyt małej głębi kolorów" << "\n";
@@ -34,7 +34,7 @@ namespace steganography {
         auto pixels = bmp::read_image(pixel_array_offset, width, height, bits_per_pixel, fs);
         bmp::encode_secret_message(pixels, message);
 
-         auto pixel_array = bmp::create_pixel_array(pixels, width, bits_per_pixel);
+        auto pixel_array = bmp::create_pixel_array(pixels, width, bits_per_pixel);
         // @TODO: write_bmp(source_file, target_file_path, pixel_array, pixel_array_offset)
     }
 }
